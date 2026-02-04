@@ -1,128 +1,111 @@
-# GPhoto2 Webcam Controller
+# Big Digi Cam
 
-Aplicativo GTK4/Adwaita para controlar câmeras digitais compatíveis com gphoto2 como webcam no Linux.
+Um aplicativo poderoso e elegante para transformar sua câmera digital profissional (DSLR/Mirrorless) em uma webcam de alta qualidade no Linux ou controlá-la para fotografias remotas.
 
-## Funcionalidades
+Desenvolvido por **Rafael Ruscher** (BigLinux Team).
+Contato: [rruscher@gmail.com](mailto:rruscher@gmail.com)
 
-- **Modo Webcam**: Transmite a visualização ao vivo da câmera como um dispositivo de vídeo virtual
-- **Tirar Foto**: Captura fotos diretamente da câmera com nomes sequenciais
-- **Detecção Automática**: Detecta automaticamente o modelo da câmera conectada
-- **Logs em Tempo Real**: Exibe estatísticas do ffmpeg e status da transmissão
-- **Persistência de Sessão**: Reconecta a sessões de webcam em background após reiniciar o app
+Projetado e otimizado para **BigLinux**, **Manjaro**, **Arch Linux** e distribuições baseadas.
 
-## Câmeras Suportadas
+![License](https://img.shields.io/badge/license-GPL3-blue.svg) ![Platform](https://img.shields.io/badge/platform-Linux-green.svg) ![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)
 
-O aplicativo suporta todas as câmeras compatíveis com libgphoto2 que possuem suporte a LiveView/Webcam, incluindo:
+## 🚀 Funcionalidades
 
-- **Canon**: EOS (1000D, 1100D, 1200D, 1300D, 40D, 450D, 50D, 500D, 550D, 60D, 600D, 650D, 5D, 6D, 7D, 70D, 700D, 750D, 80D, M series, R series), PowerShot (A, G, S, SD, SX series)
-- **Nikon**: D series (D40, D50, D60, D70, D80, D90, D200, D300, D700, D800, D3, D4, etc.), Z series, CoolPix
-- **Sony**: Alpha series (A7, A6000, A5100, A6300, A6500, A77, etc.), DSC RX series
-- **Fuji**: X-T series, X-Pro, X-H, GFX series
-- **Olympus**: E-M series, C series
-- **Panasonic**: GH5, GX8
+- **Webcam Profissional**: Utilize a qualidade ótica da sua câmera em reuniões (Zoom, Meet, Teams) ou transmissões (OBS Studio).
+- **Controle Fotográfico**: Capture fotos diretamente pelo computador com pré-visualização.
+- **Detecção Inteligente**: Identifica automaticamente sua câmera e ajusta as melhores configurações.
+- **Interface Moderna**: UI baseada em **GTK4 + Libadwaita**, completamente integrada ao tema do sistema (Dark/Light).
+- **Tradução**: Suporte a múltiplos idiomas (Internacionalização via `.po` files).
+- **Zero Config**: Instalação e configuração automáticas de drivers (`v4l2loopback`) e dependências.
 
-Consulte a [lista completa de câmeras suportadas](http://www.gphoto.org/proj/libgphoto2/support.php).
+## 📦 Instalação
 
-## Requisitos
+O instalador automático cuida de tudo para você em sistemas baseados no Arch Linux.
 
-### Arch Linux / Manjaro / EndeavourOS
-
-Execute o instalador incluído:
+1. Clone o repositório ou baixe o código.
+2. Execute o instalador:
 
 ```bash
-./install-archlinux.sh
+chmod +x script/install-archlinux.sh
+./script/install-archlinux.sh
 ```
 
-### Dependências Manuais
+**Dependências instaladas automaticamente:**
+`gphoto2`, `libgphoto2`, `ffmpeg`, `v4l2loopback-dkms`, `python-gobject`, `gtk4`, `libadwaita`, `linux-headers`.
 
-| Pacote | Descrição |
-|--------|-----------|
-| `gphoto2` | Utilitário de linha de comando para controle de câmeras |
-| `libgphoto2` | Biblioteca para acesso PTP/MTP |
-| `ffmpeg` | Processamento e streaming de vídeo |
-| `v4l2loopback-dkms` | Módulo kernel para dispositivo de vídeo virtual |
-| `python` | Python 3.x |
-| `python-gobject` | Bindings Python para GObject/GTK |
-| `gtk4` | Toolkit GTK4 |
-| `libadwaita` | Biblioteca Adwaita para apps GNOME modernos |
-| `linux-headers` | Headers do kernel para compilação DKMS |
+## 🎮 Uso
 
-### Pacotes Opcionais
-
-| Pacote | Descrição |
-|--------|-----------|
-| `v4l-utils` | Utilitários Video4Linux (v4l2-ctl) |
-
-## Uso
-
-1. Conecte sua câmera via USB
-2. Ligue a câmera
-3. Execute o aplicativo:
+Após a instalação, você pode iniciar o aplicativo pelo menu do sistema ou via terminal:
 
 ```bash
-python3 canon_webcam_controller.py
+python3 main.py
 ```
 
-### Modo Webcam
+### Modo Webcam 🎥
+1. Conecte sua câmera USB e ligue-a.
+2. Aguarde a detecção automática no cabeçalho do app.
+3. Clique no botão de Gravação/Webcam.
+4. O app criará um dispositivo `/dev/video*` virtual.
+5. Abra seu OBS ou Google Meet e selecione a câmera "Canon DSLR Webcam" (ou nome similar).
 
-1. Clique em **"Iniciar Modo Webcam"**
-2. Confirme o aviso para posicionar a câmera
-3. Aguarde o carregamento dos drivers (pode pedir senha)
-4. A câmera estará disponível como `/dev/videoX`
+### Modo Foto 📸
+1. Alterne para a aba "Foto".
+2. Clique no botão de captura.
+3. A foto será baixada e salva automaticamente na pasta do aplicativo e uma miniatura aparecerá para visualização rápida.
 
-Use a webcam em outros aplicativos (OBS, Teams, Zoom, etc.) selecionando o dispositivo de vídeo virtual.
+## 📷 Dispositivos Compatíveis
 
-### Tirar Foto
+O Big Digi Cam utiliza a poderosa biblioteca `libgphoto2` no backend. Atualmente, o projeto é testado e validado principalmente com câmeras **Canon EOS**, mas suporta uma vasta gama de dispositivos que possuam funcionalidade "LiveView".
 
-1. Clique em **"Tirar Foto"**
-2. Confirme a posição da câmera
-3. A foto será salva como `captXXXX.jpg` no diretório atual
-4. Opção para abrir a foto após captura
+### Lista Resumida de Compatibilidade
 
-## Estrutura de Arquivos
+#### Canon (Suporte Excelente)
+- **DSLR EOS**: 1000D, 1100D, 1200D, 1300D, 2000D, 4000D
+- **Série Rebel**: T3, T3i, T4i, T5, T5i, T6, T6i, T7, T7i, T8i, SL1, SL2, SL3
+- **Série Semi-Pro/Pro**: 40D, 50D, 60D, 70D, 77D, 80D, 90D, 7D, 7D Mark II
+- **Full Frame**: 5D Mark II/III/IV, 6D, 6D Mark II, 1D X series
+- **Mirrorless (EOS M/R)**: M50, M50 MkII, M5, M6, R, RP, R5, R6, R7, R10
+
+#### Nikon (Suporte Muito Bom)
+- **Série D**: D3000-D3500, D5000-D5600, D7000-D7500
+- **Full Frame**: D600, D610, D750, D780, D800, D810, D850
+- **Mirrorless Z**: Z5, Z6, Z7, Z30, Z50, Zfc, Z9
+
+#### Sony (Suporte Bom - Requer Modo "PC Remote" ativado)
+- **Alpha**: A7 series (II, III, IV), A7R series, A7S series
+- **APS-C**: A6000, A6100, A6300, A6400, A6500, A6600
+- **Compactas**: RX100 series (alguns modelos), ZV-1, ZV-E10
+
+#### Fujifilm (Suporte Variável)
+- X-T series (X-T1 a X-T5), X-Pro2/3, X-H1/H2, GFX series.
+
+#### Panasonic / Olympus / Outros
+- Muitos modelos suportados, verifique a lista completa abaixo.
+
+---
+---
+🔗 **Lista Oficial e Completa:** Para verificar se seu modelo específico é suportado, consulte: [gphoto2 Supported Cameras](http://www.gphoto.org/proj/libgphoto2/support.php)
+
+## 📁 Estrutura de Arquivos
 
 ```
 .
-├── canon_webcam_controller.py  # Aplicativo principal
-├── run_webcam.sh               # Script auxiliar para streaming
-├── install-archlinux.sh        # Instalador para Arch Linux
+├── main.py                     # Aplicativo principal
+├── script/                     # Scripts auxiliares
+│   ├── run_webcam.sh           # Script auxiliar para streaming
+│   └── install-archlinux.sh    # Instalador para Arch Linux
 └── README.md                   # Este arquivo
 ```
 
-## Solução de Problemas
+## 🛠️ Suporte e Contribuição
 
-### "Não foi possível contactar o dispositivo USB"
+Encontrou um bug ou tem uma sugestão?
+Abra uma issue no nosso repositório ou entre em contato.
 
-O processo `gvfs-gphoto2-volume-monitor` pode estar bloqueando a câmera. O aplicativo tenta matá-lo automaticamente, mas você pode fazer manualmente:
+**Autor**: Rafael Ruscher
+**E-mail**: rruscher@gmail.com
+**Projeto**: BigLinux
 
-```bash
-pkill -f gvfs-gphoto2-volume-monitor
-```
+## ⚖️ Licença
 
-### "Câmera não detectada"
-
-1. Verifique se a câmera está ligada
-2. Verifique a conexão USB
-3. Execute `gphoto2 --auto-detect` para diagnóstico
-
-### Módulo v4l2loopback não carrega
-
-```bash
-sudo modprobe v4l2loopback exclusive_caps=1 max_buffer=2
-```
-
-Se persistir, verifique se os headers do kernel estão instalados:
-
-```bash
-sudo pacman -S linux-headers
-```
-
-## Licença
-
-Este projeto é de código aberto sob a licença MIT.
-
-## Créditos
-
-- [gphoto2](http://www.gphoto.org/) - Controle de câmeras
-- [libgphoto2](https://github.com/gphoto/libgphoto2) - Biblioteca de suporte
-- [v4l2loopback](https://github.com/umlaeute/v4l2loopback) - Dispositivo de vídeo virtual
+Distribuído sob a licença GPLv3. Veja o arquivo `LICENSE` para mais informações.

@@ -13,31 +13,33 @@ gi.require_version('Adw', '1')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk, GdkPixbuf, Gst, GstVideo
+from utils.i18n import _
 
 # Initialize GStreamer
 Gst.init(None)
 
 class WebcamApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id='com.biglinux.GPhoto2WebcamController',
+        super().__init__(application_id='com.biglinux.BigDigiCam',
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.process = None
         self.log_process = None
-        self.camera_name = "Nenhuma câmera detectada"
+        self.camera_name = _("Nenhuma câmera detectada")
+        self.camera_detected = False
         self.current_mode = "photo"  # "photo" or "video"
         self.last_photo = None
         
         # Setup Dark Mode
         manager = Adw.StyleManager.get_default()
-        manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+        manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
 
     def do_activate(self):
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_default_size(635, 480)
+        self.win.set_default_size(702, 525)
         
         # Detect camera first
         self.detect_camera()
-        self.win.set_title(f"Webcam: {self.camera_name}")
+        self.win.set_title(_("Big DigiCam"))
         
         # Main box
         # Main box with ToastOverlay
@@ -66,11 +68,34 @@ class WebcamApp(Adw.Application):
         self.view_switcher.add_css_class("round")
         header.set_title_widget(self.view_switcher)
         
-        # Right side - Menu button
-        menu_btn = Gtk.MenuButton()
-        menu_btn.set_icon_name("open-menu-symbolic")
-        menu_btn.set_css_classes(["flat"])
+        # Right side - Menu button with hamburger menu
+        menu_btn = self._create_menu_button()
         header.pack_end(menu_btn)
+        
+        # Left side - Camera Status
+        self.camera_status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        
+        is_error = not self.camera_detected
+        icon_name = "dialog-error-symbolic" if is_error else "emblem-ok-symbolic"
+        style_class = "error" if is_error else "success"
+        
+        self.status_icon = Gtk.Image.new_from_icon_name(icon_name)
+        self.status_icon.add_css_class(style_class)
+        self.camera_status_box.append(self.status_icon)
+        
+        self.camera_label = Gtk.Label(label=self.camera_name)
+        self.camera_label.add_css_class(style_class)
+        self.camera_label.set_ellipsize(3)
+        self.camera_label.set_max_width_chars(30)
+        self.camera_status_box.append(self.camera_label)
+        
+        header.pack_start(self.camera_status_box)
+        
+        # Progress Bar
+        self.loading_bar = Gtk.ProgressBar()
+        self.loading_bar.add_css_class("thin-progress")
+        self.loading_bar.set_visible(False)
+        main_box.append(self.loading_bar)
         
         # Toast code moved to overlay
 
@@ -128,7 +153,7 @@ class WebcamApp(Adw.Application):
         self.photo_thumbnail = Gtk.Button()
         self.photo_thumbnail.set_css_classes(["circular", "thumbnail-button"])
         self.photo_thumbnail.set_size_request(48, 48)
-        self.photo_thumbnail.set_tooltip_text("Última foto")
+        self.photo_thumbnail.set_tooltip_text(_("Última foto"))
         self.photo_thumbnail.connect("clicked", self.on_thumbnail_clicked)
         
         # Use Adw.Avatar for better circular image handling
@@ -154,7 +179,7 @@ class WebcamApp(Adw.Application):
         self.btn_stop.set_icon_name("media-playback-stop-symbolic")
         self.btn_stop.set_css_classes(["circular", "destructive-action"])
         self.btn_stop.set_size_request(52, 48)
-        self.btn_stop.set_tooltip_text("Parar Webcam")
+        self.btn_stop.set_tooltip_text(_("Parar Webcam"))
         self.btn_stop.set_visible(False)
         self.btn_stop.connect("clicked", self.on_stop_clicked)
         floating_toolbar.append(self.btn_stop)
@@ -176,7 +201,7 @@ class WebcamApp(Adw.Application):
 
         
         # Use ViewStack for proper ViewSwitcher integration
-        photo_page = self.preview_stack.add_titled(photo_box, "photo", "Foto")
+        photo_page = self.preview_stack.add_titled(photo_box, "photo", _("Foto"))
         photo_page.set_icon_name("camera-photo-symbolic")
         
         # Video preview page with GStreamer
@@ -191,7 +216,7 @@ class WebcamApp(Adw.Application):
         self.video_picture.set_content_fit(Gtk.ContentFit.CONTAIN)
         video_box.append(self.video_picture)
         
-        video_page = self.preview_stack.add_titled(video_box, "video", "Webcam")
+        video_page = self.preview_stack.add_titled(video_box, "video", _("Webcam"))
         video_page.set_icon_name("camera-video-symbolic")
         
         # Connect ViewSwitcher to Stack
@@ -209,6 +234,57 @@ class WebcamApp(Adw.Application):
         
         # Check for background session
         self.check_existing_session()
+        
+        # Setup actions for menu
+        self._setup_actions()
+
+    def _create_menu_button(self):
+        menu = Gio.Menu.new()
+        section = Gio.Menu.new()
+        section.append(_("Sobre"), "app.about")
+        section.append(_("Sair"), "app.quit")
+        menu.append_section(None, section)
+        menu_button = Gtk.MenuButton()
+        menu_button.set_icon_name("open-menu-symbolic")
+        menu_button.set_menu_model(menu)
+        menu_button.set_tooltip_text(_("Menu principal"))
+        menu_button.set_css_classes(["flat"])
+        return menu_button
+
+    def _setup_actions(self):
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", self._on_about)
+        self.add_action(about_action)
+        quit_action = Gio.SimpleAction.new("quit", None)
+        quit_action.connect("activate", self._on_quit)
+        self.add_action(quit_action)
+
+    def _on_about(self, action=None, param=None):
+        about = Adw.AboutDialog(
+            application_name="Big DigiCam",
+            application_icon="camera-photo-symbolic",
+            developer_name="BigLinux",
+            version="1.0",
+            comments=_("Controlador de câmera digital usando gPhoto2 e FFmpeg"),
+            website="https://github.com/biglinux",
+            license_type=Gtk.License.GPL_3_0,
+            developers=["BigLinux Team"],
+        )
+        about.present(self.win)
+
+    def _on_quit(self, action=None, param=None):
+        self.stop_video_preview()
+        if self.process:
+            try:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            except:
+                pass
+        
+        subprocess.run(["pkill", "-f", "run_webcam.sh"], check=False)
+        subprocess.run(["pkill", "-f", "gphoto2 --stdout"], check=False)
+        
+        # Quit application
+        self.quit()
 
     def apply_css(self):
         css = b"""
@@ -331,6 +407,21 @@ class WebcamApp(Adw.Application):
             background: #e01b24;
             color: white;
         }
+        
+        .accent { color: @accent_bg_color; font-weight: bold; }
+        .error { color: #e01b24; font-weight: bold; }
+        .thin-progress > trough {
+            min-height: 2px;
+            background-color: transparent;
+            box-shadow: none;
+            border: none;
+        }
+        
+        .thin-progress > trough > progress {
+            min-height: 2px;
+            border-radius: 999px;
+            background-color: @accent_bg_color;
+        }
         """
         
         provider = Gtk.CssProvider()
@@ -342,7 +433,6 @@ class WebcamApp(Adw.Application):
         )
 
     def update_mode_ui(self):
-        """Update UI elements based on current mode."""
         if self.current_mode == "photo":
             self.btn_action.set_icon_name("camera-photo-symbolic")
             self.preview_stack.set_visible_child_name("photo")
@@ -351,11 +441,11 @@ class WebcamApp(Adw.Application):
             self.preview_stack.set_visible_child_name("video")
 
     def on_mode_changed(self, stack, param):
-        """Called when ViewSwitcher changes the visible page."""
         page_name = stack.get_visible_child_name()
         if page_name == "photo":
             self.current_mode = "photo"
             self.btn_action.set_icon_name("camera-photo-symbolic")
+            self.fps_label.set_visible(False)
         else:
             self.current_mode = "video"
             self.btn_action.set_icon_name("media-record-symbolic")
@@ -371,16 +461,11 @@ class WebcamApp(Adw.Application):
             subprocess.run(["xdg-open", self.last_photo])
 
     def load_last_photo(self):
-        """Load the most recent photo into preview and thumbnail."""
         try:
             files = glob.glob("capt*.jpg")
             if files:
                 self.last_photo = max(files, key=os.path.getctime)
-                
-                # Load into main preview
                 self.photo_preview.set_filename(self.last_photo)
-                
-                # Load into thumbnail (Avatar)
                 try:
                     texture = Gdk.Texture.new_from_filename(self.last_photo)
                     self.thumbnail_avatar.set_custom_image(texture)
@@ -390,7 +475,6 @@ class WebcamApp(Adw.Application):
             pass
 
     def detect_camera(self):
-        """Detect connected camera using gphoto2 --auto-detect."""
         try:
             result = subprocess.run(
                 ["gphoto2", "--auto-detect"],
@@ -404,9 +488,11 @@ class WebcamApp(Adw.Application):
                     parts = line.split('usb:')
                     if parts:
                         self.camera_name = parts[0].strip()
+                        self.camera_detected = True
                         return
         except:
-            self.camera_name = "Câmera não detectada"
+            self.camera_name = _("Câmera não detectada")
+            self.camera_detected = False
 
     def check_existing_session(self):
         try:
@@ -415,7 +501,7 @@ class WebcamApp(Adw.Application):
             res = subprocess.run(["pgrep", "-f", "gphoto2 --stdout"], capture_output=True, text=True)
             
             if res.returncode == 0 and res.stdout.strip():
-                print("Sessão existente detectada. Restaurando...")
+                # print("Sessão existente detectada. Restaurando...")
                 self.current_mode = "video"
                 self.update_mode_ui()
                 
@@ -423,22 +509,18 @@ class WebcamApp(Adw.Application):
                 self.btn_action.set_visible(False)
                 self.btn_stop.set_visible(True)
                 
-                self.show_toast("Sessão restaurada", "accent")
+                self.show_toast(_("Sessão restaurada"), "accent")
                 
-                # Start preview immediately since pipeline is already running
-                GLib.idle_add(self.start_video_preview)
+                # Show status without trying preview (keeps v4l2loopback free for OBS)
+                GLib.idle_add(self.show_webcam_active_status)
         except Exception as e:
             print(f"Erro ao verificar sessão: {e}")
 
     def take_photo(self):
-        """Take a photo and update the preview."""
         self.set_loading(True)
-        # self.photo_label removed, status shown via toast if needed or implicitly by loading state
-        
-        # Stop webcam if running (camera can only do one thing at a time)
         was_webcam_running = getattr(self, 'process', None) is not None
         if was_webcam_running:
-            self.show_toast("Parando webcam...", "warning")
+            self.show_toast(_("Parando webcam..."), "warning")
             self.stop_video_preview()
             
             # Kill webcam processes
@@ -461,7 +543,7 @@ class WebcamApp(Adw.Application):
                 time.sleep(1)
                 
                 target_filename = self.get_next_filename()
-                GLib.idle_add(lambda: self.show_toast(f"Capturando {target_filename}...", "accent"))
+                GLib.idle_add(lambda: self.show_toast(f"{_('Capturando')} {target_filename}...", "accent"))
                 
                 result = subprocess.run(
                     ["gphoto2", "--capture-image-and-download", "--filename", target_filename, "--force-overwrite"],
@@ -471,7 +553,7 @@ class WebcamApp(Adw.Application):
                 GLib.idle_add(self.on_photo_captured, target_filename)
                 
             except subprocess.TimeoutExpired:
-                GLib.idle_add(self.on_photo_error, "Timeout - câmera demorou muito")
+                GLib.idle_add(self.on_photo_error, _("Timeout - câmera demorou muito"))
             except subprocess.CalledProcessError as e:
                 error_msg = e.stderr if e.stderr else str(e)
                 GLib.idle_add(self.on_photo_error, error_msg)
@@ -485,13 +567,13 @@ class WebcamApp(Adw.Application):
         self.last_photo = filename
         self.load_last_photo()
         self.set_loading(False)
-        self.show_toast(f"Foto salva: {filename}", "success")
+        self.show_toast(f"{_('Foto salva:')} {filename}", "success")
         self.ask_open_photo(filename)
         return False
 
     def on_photo_error(self, error):
         self.set_loading(False)
-        self.show_toast("Erro ao capturar foto", "error")
+        self.show_toast(_("Erro ao capturar foto"), "error")
         print(f"[Photo Error] {error}")
         return False
 
@@ -509,15 +591,14 @@ class WebcamApp(Adw.Application):
         return f"capt{max_idx+1:04d}.jpg"
 
     def start_webcam(self):
-        """Start webcam streaming."""
         self.set_loading(True)
-        self.show_toast("Iniciando webcam...", "warning")
+        self.show_toast(_("Iniciando webcam..."), "warning")
         self.btn_action.set_visible(False)
         self.btn_stop.set_visible(True)
         
         # Determine correct path relative to this script
         base_dir = os.path.dirname(os.path.realpath(__file__))
-        script_path = os.path.join(base_dir, "run_webcam.sh")
+        script_path = os.path.join(base_dir, "script", "run_webcam.sh")
         
         # Ensure it is executable
         if not os.access(script_path, os.X_OK):
@@ -539,7 +620,7 @@ class WebcamApp(Adw.Application):
                 # Check retuncode
                 if res.returncode == 0:
                     # Success path
-                    print(f"Script output: {res.stdout}")
+                    # print(f"Script output: {res.stdout}")
                     GLib.idle_add(self.on_webcam_started_success)
                 else:
                     # Failure path
@@ -558,65 +639,161 @@ class WebcamApp(Adw.Application):
         threading.Thread(target=run_script_thread, daemon=True).start()
 
     def on_webcam_started_success(self):
-        self.show_toast("Webcam ativa!", "success")
-        self.start_log_watcher()
-        self.start_video_preview()
+        # self.show_toast("Webcam ativa!", "success")
+        self.set_loading(False)
+        self.show_webcam_active_status()
+
+    def show_webcam_active_status(self):
+        devices = sorted(glob.glob("/dev/video*"))
+        if not devices:
+            return
+            
+        self.preview_device = devices[-1]
+        
+        # Get and show stream info
+        try:
+            result = subprocess.run(
+                ["v4l2-ctl", "-d", self.preview_device, "--get-fmt-video"],
+                capture_output=True, text=True, timeout=2
+            )
+            if "Width/Height" in result.stdout:
+                for line in result.stdout.split('\n'):
+                    if 'Width/Height' in line:
+                        # resolution = line.split(':')[1].strip()
+                        # GLib.timeout_add(500, lambda: self.show_toast(f"📹 {resolution}", "accent") or False)
+                        break
+        except:
+            pass
+        
+        # Try to start preview (with exclusive_caps=0, this should work)
+        GLib.timeout_add(1000, self.start_video_preview)
 
     def on_webcam_started_error(self, error):
-        self.show_toast(f"Erro ao iniciar: {error}", "error")
+        if "No camera" in error or "Nenhuma câmera" in error:
+            self.show_toast(_("Erro: Nenhuma câmera localizada"), "error")
+        else:
+            self.show_toast(_("Erro ao iniciar webcam"), "error")
+            
+        print(f"[Webcam Error] {error}")
         self.btn_action.set_visible(True)
         self.btn_stop.set_visible(False)
         self.set_loading(False)
 
     def start_video_preview(self):
-        """Start video preview using OpenCV (fallback to GStreamer if needed)."""
         self.set_loading(True)
-        self.show_toast("Iniciando preview...", "warning")
+        # self.show_toast("Aguardando stream...", "warning")
         
         # Determine device
+        devices = sorted(glob.glob("/dev/video*"))
+        if not devices:
+            self.show_toast(_("Nenhum dispositivo"), "warning")
+            self.set_loading(False)
+            return
+        self.preview_device = devices[-1]
+        
+        # Wait for device to be ready (ffmpeg needs time to start streaming)
+        self._preview_retry_count = 0
+        self._preview_max_retries = 30  # 30 * 500ms = 15 seconds max wait
+        GLib.timeout_add(500, self._try_start_gst_preview)
+
+    def _try_start_gst_preview(self):
+        self._preview_retry_count += 1
+        
         try:
-            devices = sorted(glob.glob("/dev/video*"))
-            if not devices:
-                self.show_toast("Nenhum dispositivo", "warning")
-                self.set_loading(False)
-                return
-            self.preview_device = devices[-1]
-            
-            # Extract index from /dev/videoX
-            try:
-                dev_idx = int(re.search(r'\d+$', self.preview_device).group())
-            except:
-                dev_idx = 0
-            
-            # Try OpenCV first as requested by user ("bibilioteca, não sei!")
-            import cv2
-            self.use_opencv = True
-            
-            # Create Capture
-            # CAP_V4L2 is robust
-            self.cap = cv2.VideoCapture(dev_idx, cv2.CAP_V4L2)
-            
-            if not self.cap.isOpened():
-                # Try waiting a bit more or fallback
-                raise Exception("OpenCV não conseguiu abrir o dispositivo")
-                
+            # Skip v4l2-ctl check which might fail if device is busy
+            # Just verify if we have retried enough times to allow ffmpeg to start
+            if self._preview_retry_count < 3: # Wait at least 1.5s
+                # self.show_toast(f"Iniciando stream... ({self._preview_retry_count})", "warning")
+                return True
+
+            # Device ready or max retries reached, try to start
+            self.use_opencv = False
             self.preview_active = True
             self.fps_counter = 0
             self.last_fps_time = time.time()
             
-            # Start polling timer
-            GLib.timeout_add(33, self.update_opencv_frame) # ~30 FPS
+            # Try UDP stream (Guaranteed no conflict)
+            # Using packetsize=1316 to match ffmpeg output
+            pipeline_attempts = [
+                # Try 1: Explicit MPEG-TS caps with localhost bind
+                (
+                    "udpsrc port=5000 address=127.0.0.1 caps=\"video/mpegts,packetsize=(int)1316\" ! "
+                    "queue max-size-bytes=65536 ! "
+                    "tsdemux ! "
+                    "decodebin ! "
+                    "videoconvert ! "
+                    "video/x-raw,format=RGB ! "
+                    "appsink name=sink emit-signals=True drop=True max-buffers=2 sync=False"
+                ),
+                # Try 2: Bind to ALL interfaces (0.0.0.0) just in case
+                (
+                    "udpsrc port=5000 caps=\"video/mpegts,packetsize=(int)1316\" ! "
+                    "queue ! "
+                    "decodebin ! "
+                    "videoconvert ! "
+                    "video/x-raw,format=RGB ! "
+                    "appsink name=sink emit-signals=True drop=True max-buffers=2 sync=False"
+                ),
+            ]
             
-            self.show_toast(f"Preview (OpenCV): {self.preview_device}", "accent")
+            for i, pipeline_str in enumerate(pipeline_attempts):
+                try:
+                    # print(f"[Preview] Tentando pipeline {i+1}...")
+                    self.gst_pipeline = Gst.parse_launch(pipeline_str)
+                    appsink = self.gst_pipeline.get_by_name("sink")
+                    appsink.connect("new-sample", self.on_gst_sample_with_fps)
+                    
+                    bus = self.gst_pipeline.get_bus()
+                    bus.add_signal_watch()
+                    bus.connect("message::error", self.on_gst_error)
+                    
+                    # Try to start
+                    ret = self.gst_pipeline.set_state(Gst.State.PLAYING)
+                    if ret == Gst.StateChangeReturn.FAILURE:
+                        print(f"[Preview] Pipeline {i+1} falhou ao iniciar")
+                        self.gst_pipeline.set_state(Gst.State.NULL)
+                        self.gst_pipeline = None
+                        continue
+                    
+                    # Wait a bit to see if it errors immediately (MAX 2 seconds)
+                    # Don't use CLOCK_TIME_NONE as it freezes the UI waiting for stream
+                    ret, state, pending = self.gst_pipeline.get_state(2 * Gst.SECOND)
+                    
+                    if ret == Gst.StateChangeReturn.FAILURE:
+                         print(f"[Preview] Pipeline {i+1} falhou state change")
+                         self.gst_pipeline.set_state(Gst.State.NULL)
+                         self.gst_pipeline = None
+                         continue
+                         
+                    if state == Gst.State.PLAYING or ret == Gst.StateChangeReturn.SUCCESS or ret == Gst.StateChangeReturn.ASYNC:
+                        # print(f"[Preview] Pipeline {i+1} iniciado (State: {state}, Ret: {ret})")
+                        # self.show_toast(f"Preview ativo", "accent")
+                        GLib.timeout_add(500, lambda: self.show_toast(_("Webcam disponível!"), "success") or False)
+                        self.set_loading(False)
+                        return False
+                        
+                except Exception as e:
+                    print(f"[Preview] Pipeline {i+1} erro: {e}")
+                    if self.gst_pipeline:
+                        self.gst_pipeline.set_state(Gst.State.NULL)
+                        self.gst_pipeline = None
+                    continue
+            
+            # All pipelines failed - show message but don't block OBS
+            print("[Preview] Todos pipelines falharam")
+            # self.show_toast("Preview indisponível (OBS/Meet funcionam)", "warning")
+            self.preview_active = False
             self.set_loading(False)
+            # Alternative: Try OpenCV Fallback?
+            # self.try_opencv_fallback()
+            return False
             
-        except ImportError:
-            self.show_toast("OpenCV não encontrado, usando GStreamer...", "warning")
-            self.use_opencv = False
-            self.start_gstreamer_preview()
         except Exception as e:
-            self.show_toast(f"Erro Preview: {e}", "error")
+            if self._preview_retry_count < self._preview_max_retries:
+                return True  # Retry
+            self.show_toast("Preview indisponível", "warning")
             self.set_loading(False)
+            return False
 
     def update_opencv_frame(self):
         if not self.preview_active or not hasattr(self, 'cap'):
@@ -632,7 +809,9 @@ class WebcamApp(Adw.Application):
                 self.fps_counter = 0
                 self.last_fps_time = t
                 self.fps_label.set_label(f"FPS {fps}")
-                self.fps_label.set_visible(True)
+                # Only show FPS in video mode
+                if self.current_mode == "video":
+                    self.fps_label.set_visible(True)
 
             # Convert BGR to RGB
             # Frame is numpy array
@@ -647,36 +826,21 @@ class WebcamApp(Adw.Application):
             
         return True # Keep calling
 
-    def start_gstreamer_preview(self):
-        # Fallback implementation (Simplified)
-        try:
-             # v4l2src device=... ! decodebin ! videoconvert ! ...
-             # Using decodebin is safer than forcing raw caps
-            pipeline_str = (
-                f"v4l2src device={self.preview_device} ! "
-                "decodebin ! "
-                "videoconvert ! "
-                "videoscale ! "
-                "video/x-raw,format=RGB,width=640,height=480 ! "
-                "appsink name=sink emit-signals=True drop=True max-buffers=1 sync=False"
-            )
-            self.gst_pipeline = Gst.parse_launch(pipeline_str)
-            appsink = self.gst_pipeline.get_by_name("sink")
-            appsink.connect("new-sample", self.on_gst_sample)
-            self.gst_pipeline.set_state(Gst.State.PLAYING)
-            self.preview_active = True
-        except Exception as e:
-             self.show_toast(f"Erro GStreamer: {e}", "error")
-
-    # Keep on_gst_sample for fallback
-    def on_gst_sample(self, sink):
+    def on_gst_sample_with_fps(self, sink):
         if not self.preview_active:
             return Gst.FlowReturn.ERROR
         sample = sink.emit("pull-sample")
-        if not sample: return Gst.FlowReturn.ERROR
+        if not sample:
+            return Gst.FlowReturn.ERROR
         
-        # Basic stats if GStreamer running
-        self.fps_label.set_visible(True)
+        # FPS Calculation
+        self.fps_counter += 1
+        t = time.time()
+        if t - self.last_fps_time >= 1.0:
+            fps = self.fps_counter
+            self.fps_counter = 0
+            self.last_fps_time = t
+            GLib.idle_add(lambda: self.fps_label.set_label(f"FPS {fps}") or self.fps_label.set_visible(self.current_mode == "video"))
         
         buf = sample.get_buffer()
         caps = sample.get_caps()
@@ -689,6 +853,30 @@ class WebcamApp(Adw.Application):
             buf.unmap(map_info)
             GLib.idle_add(self.update_texture, w, h, glib_bytes)
         return Gst.FlowReturn.OK
+
+    def on_gst_error(self, bus, msg):
+        err, debug = msg.parse_error()
+        print(f"[GStreamer Error] {err}: {debug}")
+        self.show_toast("Erro no preview, tentando alternativa...", "warning")
+        GLib.idle_add(self.try_opencv_fallback)
+
+    def try_opencv_fallback(self):
+        try:
+            import cv2
+            dev_idx = int(re.search(r'\d+$', self.preview_device).group())
+            self.cap = cv2.VideoCapture(dev_idx, cv2.CAP_V4L2)
+            if self.cap.isOpened():
+                self.use_opencv = True
+                self.preview_active = True
+                self.fps_counter = 0
+                self.last_fps_time = time.time()
+                GLib.timeout_add(33, self.update_opencv_frame)
+                self.show_toast("Preview via OpenCV (acesso exclusivo)", "warning")
+            else:
+                self.show_toast("Falha no fallback OpenCV", "error")
+        except Exception as e:
+            self.show_toast(f"Fallback falhou: {e}", "error")
+
 
     def update_texture(self, w, h, glib_bytes):
         if not self.preview_active:
@@ -721,17 +909,7 @@ class WebcamApp(Adw.Application):
             self.gst_pipeline = None
             
         self.video_picture.set_paintable(None)
-
-    def start_log_watcher(self):
-        # Deprecated: log watcher not needed for GStreamer pipeline
-        pass
-
-    def on_log_output(self, fd, condition):
-        # Deprecated
-        return False
-
     def on_stop_clicked(self, btn):
-        # Stop video preview first
         self.stop_video_preview()
         
         if self.process:
@@ -773,11 +951,27 @@ class WebcamApp(Adw.Application):
         dialog.choose(self.win, None, on_response)
 
     def set_loading(self, loading=True):
-        # Progress bar removed, no-op or maybe show a spinner toast later if requested
-        pass
+        if hasattr(self, 'loading_bar'):
+             self.loading_bar.set_visible(loading)
+             
+        if loading:
+            if not hasattr(self, '_pulse_timer') or self._pulse_timer is None:
+                self._pulse_timer = GLib.timeout_add(100, self._pulse_progress)
+        else:
+            if hasattr(self, '_pulse_timer') and self._pulse_timer:
+                try:
+                    GLib.source_remove(self._pulse_timer)
+                except:
+                    pass
+                self._pulse_timer = None
+
+    def _pulse_progress(self):
+        if hasattr(self, 'loading_bar') and self.loading_bar.get_visible():
+            self.loading_bar.pulse()
+            return True
+        return False
 
     def show_toast(self, message, style=None):
-        """Show a custom top toast with the message."""
         self.top_toast_label.set_label(message)
         
         # Reset classes
@@ -786,8 +980,6 @@ class WebcamApp(Adw.Application):
             self.top_toast_label.add_css_class(style)
             
         self.top_toast_revealer.set_reveal_child(True)
-        
-        # Remove existing timer if active
         if hasattr(self, '_toast_timer') and self._toast_timer is not None:
             try:
                 GLib.source_remove(self._toast_timer)
@@ -802,23 +994,7 @@ class WebcamApp(Adw.Application):
         self._toast_timer = None
         return False
 
-    def on_close_clicked(self, btn):
-        """Close the application, stopping any running processes first."""
-        # Stop video preview
-        self.stop_video_preview()
-        
-        # Stop webcam processes if running
-        if self.process:
-            try:
-                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-            except:
-                pass
-        
-        subprocess.run(["pkill", "-f", "run_webcam.sh"], check=False)
-        subprocess.run(["pkill", "-f", "gphoto2 --stdout"], check=False)
-        
-        # Close window
-        self.win.close()
+
 
 if __name__ == '__main__':
     app = WebcamApp()
