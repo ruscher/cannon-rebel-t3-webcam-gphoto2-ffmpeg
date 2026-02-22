@@ -25,8 +25,9 @@ class WebcamApp(Adw.Application):
     def __init__(self):
         # Unique application_id per instance so multiple windows are truly independent
         instance_id = os.getpid()
-        super().__init__(application_id=f'com.biglinux.BigDigiCam.pid{instance_id}',
+        super().__init__(application_id=f'org.biglinux.big_digicam.pid{instance_id}',
                          flags=Gio.ApplicationFlags.NON_UNIQUE)
+        Gtk.Window.set_default_icon_name("big-digicam")
         self.process = None
         self.log_process = None
         self.camera_name = _("Nenhuma câmera detectada")
@@ -47,6 +48,16 @@ class WebcamApp(Adw.Application):
     def do_activate(self):
         self.win = Adw.ApplicationWindow(application=self)
         self.win.set_default_size(702, 525)
+        
+        # Load local custom icons
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        base_dir = os.path.dirname(os.path.realpath(__file__))
+        icons_dir = os.path.join(base_dir, "icons")
+        if os.path.exists(icons_dir):
+            icon_theme.add_search_path(icons_dir)
+            
+        Gtk.Window.set_default_icon_name("big-digicam")
+        self.win.set_icon_name("big-digicam")
         
         # Detect camera first (will update UI on finish)
         self.detect_camera(callback=self._update_camera_dropdown)
@@ -292,14 +303,14 @@ class WebcamApp(Adw.Application):
     def _on_about(self, action=None, param=None):
         about = Adw.AboutDialog(
             application_name="Big DigiCam",
-            application_icon="camera-photo-symbolic",
+            application_icon="big-digicam",
             developer_name="BigLinux Team",
             version="1.0.0",
             comments=_("Transforme sua câmera digital em uma webcam profissional."),
             website="https://github.com/ruscher/cannon-rebel-t3-webcam-gphoto2-ffmpeg",
             issue_url="https://github.com/ruscher/cannon-rebel-t3-webcam-gphoto2-ffmpeg/issues",
             license_type=Gtk.License.GPL_3_0,
-            copyright="© 2024 BigLinux Team",
+            copyright="© 2026 BigLinux Team",
         )
         
         # Original Authors

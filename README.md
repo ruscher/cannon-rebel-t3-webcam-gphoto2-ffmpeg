@@ -89,4 +89,4 @@ Este projeto é parte integrante do esforço da comunidade **BigLinux** para for
 Este projeto está licenciado sob a **GPLv3** (General Public License v3). Sendo software livre, você é encorajado a usar, modificar e distribuir.
 
 ---
-*Desenvolvido com ❤️ pela equipe BigLinux.*
+*© 2026 BigLinux Team*
