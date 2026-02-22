@@ -1,0 +1,16 @@
+7f0a5c3 HEAD@{0}: checkout: moving from main to main
+7f0a5c3 HEAD@{1}: reset: moving to @{6}
+94ee8b0 HEAD@{2}: reset: moving to HEAD@{8}
+94ee8b0 HEAD@{3}: checkout: moving from main to main
+94ee8b0 HEAD@{4}: reset: moving to HEAD@{6}
+7f0a5c3 HEAD@{5}: checkout: moving from main to main
+7f0a5c3 HEAD@{6}: reset: moving to HEAD@{0}
+7f0a5c3 HEAD@{7}: reset: moving to HEAD@{6}
+1c4e77c HEAD@{8}: reset: moving to HEAD@{0}
+1c4e77c HEAD@{9}: reset: moving to HEAD@{3}
+94ee8b0 HEAD@{10}: checkout: moving from main to main
+94ee8b0 HEAD@{11}: commit: Version beta
+ae2e65a HEAD@{12}: commit: New version GTK4 Adwaita and Python
+1c4e77c HEAD@{13}: commit: New version GTK4 Adwaita and Python
+7f0a5c3 HEAD@{14}: commit: New version GTK4 Adwaita and Python
+91f4faa HEAD@{15}: clone: from github.com:ruscher/cannon-rebel-t3-webcam-gphoto2-ffmpeg.git
