@@ -37,9 +37,9 @@ class WebcamApp(Adw.Application):
         self.is_capturing = False # True if photo or webcam is starting/running
         self._detecting = False # Lock for detect_camera
         
-        # Setup Dark Mode
-        manager = Adw.StyleManager.get_default()
-        manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
+        # Setup Style Manager correctly
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
 
     def do_activate(self):
         self.win = Adw.ApplicationWindow(application=self)
@@ -596,12 +596,13 @@ class WebcamApp(Adw.Application):
 
     def _poll_cameras(self):
         """Periodically poll for USB camera changes (hot-plug detection)."""
-        # CRITICAL: Skip polling if ANY gphoto2 process is running on the system
-        # OR if this specific instance is busy loading or capturing.
-        if self.is_capturing or (hasattr(self, 'loading') and self.loading):
+        # CRITICAL: Skip polling if ANY capture or start-up process is active
+        # OR if gphoto2 is already running (don't interfere with ourselves)
+        if self.is_capturing or (hasattr(self, 'loading') and self.loading) or self._detecting:
             return True
 
         try:
+            # Check for any active gphoto2 process
             res = subprocess.run(["pgrep", "-f", "gphoto2"], capture_output=True)
             if res.returncode == 0:
                 return True
@@ -695,53 +696,74 @@ class WebcamApp(Adw.Application):
         self.is_capturing = True
         self.btn_action.set_sensitive(False)
         self.set_loading(True)
-        was_webcam_running = getattr(self, 'process', None) is not None
+        
+        # Determine if webcam was running via our internal state or process check
+        try:
+            res = subprocess.run(["pgrep", "-f", "gphoto2.*stdout"], capture_output=True)
+            was_webcam_running = res.returncode == 0
+        except:
+            was_webcam_running = False
+
         if was_webcam_running:
             self.show_toast(_("Parando webcam..."), "warning")
             self.stop_video_preview()
-            
-            # Kill webcam processes
             self._kill_my_processes()
-            self.process = None
-            time.sleep(4) # More time for model 1100D/Rebel T3 mirror mechanics
+            time.sleep(3) # Wait for mirror to lower on T3
         
-        # Switch to photo view
         self.current_mode = "photo"
         self.update_mode_ui()
-        self.btn_action.set_visible(True)
-        self.btn_stop.set_visible(False)
         
         def do_capture():
             try:
-                # Kill interfering processes more aggressively
-                subprocess.run(["pkill", "-9", "-f", "gvfs-gphoto2-volume-monitor"], check=False)
-                subprocess.run(["gio", "mount", "-u", "gphoto2://*"], capture_output=True, check=False)
+                # 1. Radical cleanup of GVFS
+                # We do this twice to ensure it doesn't respawn fast enough
+                for i in range(2):
+                    subprocess.run(["pkill", "-9", "-f", "gvfs-gphoto2-volume-monitor"], check=False)
+                    subprocess.run(["gio", "mount", "-u", "gphoto2://*"], capture_output=True, check=False)
                 
-                # Reset the camera USB state
-                port = self.get_selected_camera_port()
-                port_arg = ["--port", port] if port else []
-                subprocess.run(["gphoto2", "--reset"] + port_arg, capture_output=True, check=False)
+                # 2. Identify camera by MODEL NAME (more stable than dynamic ports)
+                selected_idx = self.camera_dropdown.get_selected()
+                camera_model_name = None
+                if selected_idx != Gtk.INVALID_LIST_POSITION and selected_idx < len(self.camera_list):
+                    camera_model_name = self.camera_list[selected_idx]['name']
                 
-                time.sleep(4) # Settle down time after reset
+                # If we don't have a model, we'll let gphoto2 auto-detect
+                camera_arg = ["--camera", camera_model_name] if camera_model_name else []
                 
                 target_filename = self.get_next_filename()
                 GLib.idle_add(lambda: self.show_toast(f"{_('Capturando')} {target_filename}...", "accent"))
                 
-                port = self.get_selected_camera_port()
-                port_arg = ["--port", port] if port else []
+                # 3. Capture command with retries
+                success = False
+                error_msg = ""
                 
-                result = subprocess.run(
-                    ["gphoto2", "--capture-image-and-download", "--filename", target_filename, "--force-overwrite", "--keep"] + port_arg,
-                    check=True, capture_output=True, text=True, timeout=60
-                )
+                # Retry loop for photography
+                for attempt in range(2):
+                    # For T3, force viewfinder off before capture
+                    subprocess.run(["gphoto2"] + camera_arg + ["--set-config", "viewfinder=0"], capture_output=True)
+                    
+                    result = subprocess.run(
+                        ["gphoto2"] + camera_arg + ["--capture-image-and-download", "--filename", target_filename, "--force-overwrite", "--keep"],
+                        capture_output=True, text=True, timeout=60
+                    )
+                    
+                    if result.returncode == 0:
+                        success = True
+                        break
+                    else:
+                        error_msg = result.stderr or result.stdout
+                        print(f"[Capture Attempt {attempt+1}] Failed: {error_msg}")
+                        # If busy, try a hard reset of the USB bus
+                        subprocess.run(["gphoto2"] + camera_arg + ["--reset"], capture_output=True)
+                        time.sleep(4) # Wait for re-registration
                 
-                GLib.idle_add(self.on_photo_captured, target_filename)
+                if success:
+                    GLib.idle_add(self.on_photo_captured, target_filename)
+                else:
+                    GLib.idle_add(self.on_photo_error, error_msg)
                 
             except subprocess.TimeoutExpired:
                 GLib.idle_add(self.on_photo_error, _("Timeout - câmera demorou muito"))
-            except subprocess.CalledProcessError as e:
-                error_msg = e.stderr if e.stderr else str(e)
-                GLib.idle_add(self.on_photo_error, error_msg)
             except Exception as e:
                 GLib.idle_add(self.on_photo_error, str(e))
         
@@ -909,7 +931,7 @@ class WebcamApp(Adw.Application):
                 # Try 1: Explicit MPEG-TS caps with localhost bind
                 (
                     f"udpsrc port={self.udp_port} address=127.0.0.1 caps=\"video/mpegts,packetsize=(int)1316\" ! "
-                    "queue max-size-bytes=65536 ! "
+                    "queue max-size-bytes=2097152 ! "
                     "tsdemux ! "
                     "decodebin ! "
                     "videoconvert ! "
@@ -919,7 +941,7 @@ class WebcamApp(Adw.Application):
                 # Try 2: Bind to ALL interfaces (0.0.0.0) just in case
                 (
                     f"udpsrc port={self.udp_port} caps=\"video/mpegts,packetsize=(int)1316\" ! "
-                    "queue ! "
+                    "queue max-size-bytes=2097152 ! "
                     "decodebin ! "
                     "videoconvert ! "
                     "video/x-raw,format=RGB ! "

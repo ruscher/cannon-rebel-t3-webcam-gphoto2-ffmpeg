@@ -77,13 +77,17 @@ else
   fi
 fi
 
+# Launch with high quality settings
 LOG="/tmp/canon_webcam_stream_${UDP_PORT}.log"
 ERR_LOG="/tmp/gphoto_err_${UDP_PORT}.log"
 > "$LOG"
 > "$ERR_LOG"
 
-# Launch gphoto2 + ffmpeg pipeline in background
-nohup bash -c "gphoto2 --stdout --capture-movie $PORT_STR 2>\"$ERR_LOG\" | ffmpeg -y -hide_banner -loglevel error -stats -i - -filter_complex \"[0:v]format=yuv420p,split=2[v1][v2_pre];[v2_pre]scale=700:480,format=yuv420p[v2]\" -map \"[v1]\" -r 60 -f v4l2 \"$DEVICE_VIDEO\" -map \"[v2]\" -f mpegts -r 60 -codec:v mpeg1video -b:v 800k -bf 0 \"udp://127.0.0.1:${UDP_PORT}?pkt_size=1316\" >\"$LOG\" 2>&1" &
+# Quality Upgrades:
+# - Bitrate was 800k (pixilated), now 5000k (sharp)
+# - Removed downscaling (Full native T3 resolution)
+# - Syncing to 30 FPS (Match T3 native output for stability)
+nohup bash -c "gphoto2 --stdout --capture-movie $PORT_STR 2>\"$ERR_LOG\" | ffmpeg -y -hide_banner -loglevel error -stats -i - -filter_complex \"[0:v]format=yuv420p,split=2[v1][v2]\" -map \"[v1]\" -r 30 -f v4l2 \"$DEVICE_VIDEO\" -map \"[v2]\" -f mpegts -r 30 -codec:v mpeg1video -b:v 5000k -bf 0 \"udp://127.0.0.1:${UDP_PORT}?pkt_size=1316\" >\"$LOG\" 2>&1" &
 PID=$!
 disown
 
@@ -94,7 +98,7 @@ if kill -0 $PID 2>/dev/null; then
   echo "SUCCESS: $DEVICE_VIDEO"
   exit 0
 else
-  echo "ERROR: Pipeline failed to start."
+  echo "ERROR: Pipeline failed."
   cat "$LOG"
   cat "$ERR_LOG"
   exit 1
