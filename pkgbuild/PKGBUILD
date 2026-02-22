@@ -1,0 +1,50 @@
+# Maintainer: Rafael Ruscher <rruscher@gmail.com>
+# Contributor: Barnabé di Kartola
+
+pkgname=big-digicam
+pkgver=1.0.0
+pkgrel=1
+arch=('any')
+license=('GPL3')
+pkgdesc="Transforme sua câmera digital (DSLR/Mirrorless) em uma webcam profissional e controle-a remotamente."
+url="https://github.com/ruscher/cannon-rebel-t3-webcam-gphoto2-ffmpeg"
+depends=(
+    'gtk4'
+    'libadwaita'
+    'python'
+    'python-gobject'
+    'gstreamer'
+    'gst-plugins-base'
+    'gst-plugins-good'
+    'gst-plugins-bad'
+    'gst-libav'
+    'gphoto2'
+    'libgphoto2'
+    'ffmpeg'
+    'python-opencv'
+    'bigsudo'
+    'v4l-utils'
+    'psmisc'
+    'v4l2loopback-dkms'
+    'kmod'
+)
+source=("git+${url}.git")
+md5sums=(SKIP)
+
+package() {
+    # Verify default folder
+    if [ -d "${srcdir}/${pkgname}/${pkgname}" ]; then
+        InternalDir="${srcdir}/${pkgname}/${pkgname}"
+    else
+        InternalDir="${srcdir}/${pkgname}"
+    fi
+
+    # Copy files
+    if [ -d "${InternalDir}/usr" ]; then
+        cp -r "${InternalDir}/usr" "${pkgdir}/"
+    fi
+
+    if [ -d "${InternalDir}/etc" ]; then
+        cp -r "${InternalDir}/etc" "${pkgdir}/"
+    fi
+}

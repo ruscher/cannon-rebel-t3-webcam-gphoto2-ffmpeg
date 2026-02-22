@@ -1,111 +1,92 @@
-# Big Digi Cam
+# Big DigiCam 📸
 
-Um aplicativo poderoso e elegante para transformar sua câmera digital profissional (DSLR/Mirrorless) em uma webcam de alta qualidade no Linux ou controlá-la para fotografias remotas.
+Transforme sua câmera digital (DSLR/Mirrorless) em uma poderosa webcam profissional para Linux ou capture fotos remotas com total controle. O **Big DigiCam** é baseado no projeto [libgphoto2](http://www.gphoto.org/proj/libgphoto2/), oferecendo suporte a mais de 2.500 modelos de câmeras.
 
-Desenvolvido por **Rafael Ruscher** (BigLinux Team).
-Contato: [rruscher@gmail.com](mailto:rruscher@gmail.com)
+![Big DigiCam Header](https://raw.githubusercontent.com/biglinux/biglinux-noise-reduction-pipewire/main/biglinux-microphone-header.png) *(Placeholder: Substituir pela imagem oficial do Big DigiCam)*
 
-Projetado e otimizado para **BigLinux**, **Manjaro**, **Arch Linux** e distribuições baseadas.
+---
 
-![License](https://img.shields.io/badge/license-GPL3-blue.svg) ![Platform](https://img.shields.io/badge/platform-Linux-green.svg) ![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)
+## 🌟 O Projeto
 
-## 🚀 Funcionalidades
+O **Big DigiCam** nasceu de uma necessidade real. O que começou como um pequeno script em shell criado por **Rafael Ruscher** e **Barnabé di Kartola** para permitir que o Ruscher usasse sua câmera Canon Rebel T3 em suas lives sobre o **BigLinux**, evoluiu para uma aplicação completa, elegante e robusta integrada ao ecossistema BigLinux.
 
-- **Webcam Profissional**: Utilize a qualidade ótica da sua câmera em reuniões (Zoom, Meet, Teams) ou transmissões (OBS Studio).
-- **Controle Fotográfico**: Capture fotos diretamente pelo computador com pré-visualização.
-- **Detecção Inteligente**: Identifica automaticamente sua câmera e ajusta as melhores configurações.
-- **Interface Moderna**: UI baseada em **GTK4 + Libadwaita**, completamente integrada ao tema do sistema (Dark/Light).
-- **Tradução**: Suporte a múltiplos idiomas (Internacionalização via `.po` files).
-- **Zero Config**: Instalação e configuração automáticas de drivers (`v4l2loopback`) e dependências.
+Agradecemos imensamente aos pioneiros Rafael e Barnabé por iniciarem essa jornada que hoje ajuda milhares de usuários a terem qualidade de estúdio em suas videoconferências e produções de conteúdo.
 
-## 📦 Instalação
+---
 
-O instalador automático cuida de tudo para você em sistemas baseados no Arch Linux.
+## 🚀 Funcionalidades Principais
 
-1. Clone o repositório ou baixe o código.
-2. Execute o instalador:
+- **Webcam Profissional (4K/HD)**: Use a qualidade total do sensor da sua câmera em Zoom, Teams, Google Meet, OBS Studio e Skype.
+- **Detecção Automática**: Conecte via USB e o Big DigiCam detecta o modelo e as capacidades da sua câmera instantaneamente.
+- **Fotografia Remota**: Capture imagens diretamente do computador com pré-visualização em tempo real e download automático.
+- **Alta Performance**: Pipeline otimizado com FFmpeg e GStreamer para garantir o menor atraso (latency) possível.
+- **Interface Libadwaita**: Design moderno, limpo e totalmente compatível com o tema escuro/claro do sistema.
+- **Suporte Multicam**: Gerencie múltiplas câmeras conectadas simultaneamente.
+
+---
+
+## 📸 Câmeras Suportadas
+
+Graças ao driver `libgphoto2`, suportamos quase todas as câmeras DSLR e Mirrorless modernas que possuem porta USB.
+
+### Marcas Principais
+- **Canon EOS**: Rebel T3, T5, T6, T7, SL2, SL3, 80D, 90D, R5, R6, M50, etc. (Suporte nativo excelente).
+- **Nikon**: D3200, D3500, D5300, D5600, D750, Z6, Z7, etc.
+- **Sony Alpha**: A6000, A6400, A7III, A7R, ZV-E10 (requer modo "PC Remote").
+- **FujiFilm**: X-T3, X-T4, X-H2S, etc.
+- **Panasonic/Olympus**: Diversos modelos compatíveis com PTP.
+
+> 🔗 **Verifique sua câmera**: [Lista Completa de Câmeras Suportadas](http://www.gphoto.org/proj/libgphoto2/support.php)
+
+---
+
+## 📦 Instalação (Arch Linux / BigLinux)
+
+O Big DigiCam já inclui um instalador automatizado que configura os drivers de kernel necessários (`v4l2loopback`).
 
 ```bash
+# Clone o repositório
+git clone https://github.com/ruscher/cannon-rebel-t3-webcam-gphoto2-ffmpeg.git
+cd cannon-rebel-t3-webcam-gphoto2-ffmpeg
+
+# Execute o instalador (Arch/BigLinux)
 chmod +x script/install-archlinux.sh
 ./script/install-archlinux.sh
 ```
 
-**Dependências instaladas automaticamente:**
-`gphoto2`, `libgphoto2`, `ffmpeg`, `v4l2loopback-dkms`, `python-gobject`, `gtk4`, `libadwaita`, `linux-headers`.
-
-## 🎮 Uso
-
-Após a instalação, você pode iniciar o aplicativo pelo menu do sistema ou via terminal:
-
-```bash
-python3 main.py
-```
-
-### Modo Webcam 🎥
-1. Conecte sua câmera USB e ligue-a.
-2. Aguarde a detecção automática no cabeçalho do app.
-3. Clique no botão de Gravação/Webcam.
-4. O app criará um dispositivo `/dev/video*` virtual.
-5. Abra seu OBS ou Google Meet e selecione a câmera "Canon DSLR Webcam" (ou nome similar).
-
-### Modo Foto 📸
-1. Alterne para a aba "Foto".
-2. Clique no botão de captura.
-3. A foto será baixada e salva automaticamente na pasta do aplicativo e uma miniatura aparecerá para visualização rápida.
-
-## 📷 Dispositivos Compatíveis
-
-O Big Digi Cam utiliza a poderosa biblioteca `libgphoto2` no backend. Atualmente, o projeto é testado e validado principalmente com câmeras **Canon EOS**, mas suporta uma vasta gama de dispositivos que possuam funcionalidade "LiveView".
-
-### Lista Resumida de Compatibilidade
-
-#### Canon (Suporte Excelente)
-- **DSLR EOS**: 1000D, 1100D, 1200D, 1300D, 2000D, 4000D
-- **Série Rebel**: T3, T3i, T4i, T5, T5i, T6, T6i, T7, T7i, T8i, SL1, SL2, SL3
-- **Série Semi-Pro/Pro**: 40D, 50D, 60D, 70D, 77D, 80D, 90D, 7D, 7D Mark II
-- **Full Frame**: 5D Mark II/III/IV, 6D, 6D Mark II, 1D X series
-- **Mirrorless (EOS M/R)**: M50, M50 MkII, M5, M6, R, RP, R5, R6, R7, R10
-
-#### Nikon (Suporte Muito Bom)
-- **Série D**: D3000-D3500, D5000-D5600, D7000-D7500
-- **Full Frame**: D600, D610, D750, D780, D800, D810, D850
-- **Mirrorless Z**: Z5, Z6, Z7, Z30, Z50, Zfc, Z9
-
-#### Sony (Suporte Bom - Requer Modo "PC Remote" ativado)
-- **Alpha**: A7 series (II, III, IV), A7R series, A7S series
-- **APS-C**: A6000, A6100, A6300, A6400, A6500, A6600
-- **Compactas**: RX100 series (alguns modelos), ZV-1, ZV-E10
-
-#### Fujifilm (Suporte Variável)
-- X-T series (X-T1 a X-T5), X-Pro2/3, X-H1/H2, GFX series.
-
-#### Panasonic / Olympus / Outros
-- Muitos modelos suportados, verifique a lista completa abaixo.
-
 ---
----
-🔗 **Lista Oficial e Completa:** Para verificar se seu modelo específico é suportado, consulte: [gphoto2 Supported Cameras](http://www.gphoto.org/proj/libgphoto2/support.php)
 
-## 📁 Estrutura de Arquivos
+## 🛠 Arquitetura do Projeto
+
+O projeto segue os padrões de desenvolvimento do BigLinux, inspirado na estrutura do `biglinux-settings`.
 
 ```
 .
-├── main.py                     # Aplicativo principal
-├── script/                     # Scripts auxiliares
-│   ├── run_webcam.sh           # Script auxiliar para streaming
-│   └── install-archlinux.sh    # Instalador para Arch Linux
-└── README.md                   # Este arquivo
+├── main.py                     # Entry point da aplicação
+├── script/                     # Scripts de sistema (Shell)
+│   ├── run_webcam.sh           # Gestão do pipeline FFmpeg/GPhoto2
+│   └── install-archlinux.sh    # Script de setup e drivers
+├── utils/                      # Módulos Python auxiliares
+│   └── i18n.py                 # Suporte a Internacionalização
+├── locale/                     # Arquivos de tradução (gettext)
+└── etc/                        # Configurações de sistema (sudoers/modprobe)
 ```
 
-## 🛠️ Suporte e Contribuição
+---
 
-Encontrou um bug ou tem uma sugestão?
-Abra uma issue no nosso repositório ou entre em contato.
+## 🤝 Contribuições
 
-**Autor**: Rafael Ruscher
-**E-mail**: rruscher@gmail.com
-**Projeto**: BigLinux
+Este projeto é parte integrante do esforço da comunidade **BigLinux** para fornecer ferramentas de alta qualidade para usuários Linux.
+
+**Desenvolvedores Originais:**
+- Rafael Ruscher ([@ruscher](https://github.com/ruscher))
+- Barnabé di Kartola
+
+---
 
 ## ⚖️ Licença
 
-Distribuído sob a licença GPLv3. Veja o arquivo `LICENSE` para mais informações.
+Este projeto está licenciado sob a **GPLv3** (General Public License v3). Sendo software livre, você é encorajado a usar, modificar e distribuir.
+
+---
+*Desenvolvido com ❤️ pela equipe BigLinux.*
