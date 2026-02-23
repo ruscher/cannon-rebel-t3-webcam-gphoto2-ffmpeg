@@ -908,7 +908,7 @@ class WebcamApp(Adw.Application):
                 return
             self.preview_device = devices[-1]
         
-        # Try to start preview (with exclusive_caps=0, this should work)
+        # Try to start preview (with exclusive_caps=1, this should work)
         GLib.timeout_add(1000, self.start_video_preview)
 
     def on_webcam_started_error(self, error):

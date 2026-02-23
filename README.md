@@ -1,8 +1,32 @@
-# Big DigiCam 📸
+<p align="center">
+  <img src="usr/share/biglinux/big-digicam/icons/big-digicam.svg" alt="Big DigiCam" width="128" height="128">
+</p>
 
-Transforme sua câmera digital (DSLR/Mirrorless) em uma poderosa webcam profissional para Linux ou capture fotos remotas com total controle. O **Big DigiCam** é baseado no projeto [libgphoto2](http://www.gphoto.org/proj/libgphoto2/), oferecendo suporte a mais de 2.500 modelos de câmeras.
+<h1 align="center">📸 Big DigiCam</h1>
 
-![Big DigiCam Header](https://raw.githubusercontent.com/biglinux/biglinux-noise-reduction-pipewire/main/biglinux-microphone-header.png) *(Placeholder: Substituir pela imagem oficial do Big DigiCam)*
+<p align="center">
+  <b>Transforme sua câmera digital (DSLR/Mirrorless) em uma poderosa webcam profissional para Linux</b>
+</p>
+
+<p align="center">
+  O <b>Big DigiCam</b> é baseado no projeto <a href="http://www.gphoto.org/proj/libgphoto2/">libgphoto2</a>, oferecendo suporte a mais de 2.500 modelos de câmeras.
+</p>
+
+<p align="center">
+  <a href="#-funcionalidades-principais">Funcionalidades</a> •
+  <a href="#-câmeras-suportadas">Câmeras Suportadas</a> •
+  <a href="#-instalação-arch-linux--biglinux">Instalação</a> •
+  <a href="#-contribuições">Contribuições</a> •
+  <a href="#-licença">Licença</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
+  <img src="https://img.shields.io/badge/Platform-Linux-green.svg" alt="Platform: Linux">
+  <img src="https://img.shields.io/badge/GTK-4.0-blue.svg" alt="GTK 4.0">
+  <img src="https://img.shields.io/badge/Libadwaita-1.0-purple.svg" alt="Libadwaita">
+  <img src="https://img.shields.io/badge/Python-3.x-yellow.svg" alt="Python 3">
+</p>
 
 ---
 
